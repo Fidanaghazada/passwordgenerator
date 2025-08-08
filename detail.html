@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Food Detail</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>Global Restaurant</h1>
+    </div>
+    <div class="controls">
+      <a class="btn" href="index.html">Home</a>
+      <a class="btn" href="cart.html">Cart (<span id="cartCountDetail">0</span>)</a>
+    </div>
+  </header>
+
+  <main class="detail-main">
+    <div id="detailBox" class="detail-box"></div>
+  </main>
+
+  <script>
+    // simple inline script that uses same logic as script.js to fetch data
+    (function(){
+      fetch('data.json').then(r=>r.json()).then(j=>{
+        const id = localStorage.getItem('selectedFood');
+        const item = j.countries.flatMap(c=>c.foods).find(f=>f.id===id);
+        const cart = JSON.parse(localStorage.getItem('cart')||'[]');
+        document.getElementById('cartCountDetail').innerText = cart.length;
+        if(!item){
+          document.getElementById('detailBox').innerHTML = '<p>Food not found.</p>';
+          return;
+        }
+        const avgRating = item.rating.toFixed(1);
+        document.getElementById('detailBox').innerHTML = `
+          <div class="detail-wrapper">
+            <div class="detail-image">
+              <img src="${item.image}" alt="${item.name}" />
+            </div>
+            <div class="detail-info">
+              <h2>${item.name}</h2>
+              <p class="meta"><strong>Country:</strong> ${j.countries.find(c=>c.foods.some(f=>f.id===id)).name}</p>
+              <p class="meta"><strong>Rating:</strong> ${avgRating} ⭐</p>
+              <p><strong>Ingredients:</strong> ${item.ingredients.join(', ')}</p>
+              <div class="detail-actions">
+                <button onclick="addToCartDetail('${item.id}')">Add to cart</button>
+                <button onclick="removeLocal('${item.id}')">Delete (local)</button>
+              </div>
+              <h3>Reviews</h3>
+              <ul>${item.reviews.map(r=>`<li>${r}</li>`).join('')}</ul>
+              <h3>Leave a rating</h3>
+              <div id="rateBox">
+                <select id="ratingSelect">
+                  <option value="5">5 — Excellent</option>
+                  <option value="4">4 — Very good</option>
+                  <option value="3">3 — Good</option>
+                  <option value="2">2 — Fair</option>
+                  <option value="1">1 — Poor</option>
+                </select>
+                <button onclick="leaveRating('${item.id}')">Submit</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+    })();
+
+    function addToCartDetail(id){
+      let c = JSON.parse(localStorage.getItem('cart')||'[]');
+      if(!c.includes(id)) c.push(id);
+      localStorage.setItem('cart', JSON.stringify(c));
+      alert('Added to cart');
+      document.getElementById('cartCountDetail').innerText = c.length;
+    }
+
+    function leaveRating(id){
+      const r = Number(document.getElementById('ratingSelect').value);
+      // store ratings in localStorage.ratings as object id -> [numbers]
+      const ratings = JSON.parse(localStorage.getItem('ratings')||'{}');
+      if(!ratings[id]) ratings[id]=[];
+      ratings[id].push(r);
+      localStorage.setItem('ratings', JSON.stringify(ratings));
+      alert('Thanks for rating!');
+    }
+
+    function removeLocal(id){
+      // mark deleted in localStorage so list won't show
+      const deleted = JSON.parse(localStorage.getItem('deleted')||'[]');
+      if(!deleted.includes(id)) deleted.push(id);
+      localStorage.setItem('deleted', JSON.stringify(deleted));
+      alert('Item removed locally. Refresh home to see changes.');
+    }
+  </script>
+</body>
+</html>
